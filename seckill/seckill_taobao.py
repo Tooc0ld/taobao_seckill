@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # encoding=utf-8
 
-
 import os
 import json
 import platform
@@ -20,8 +19,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-
-
 # 抢购失败最大次数
 max_retry_count = 30
 
@@ -31,7 +28,8 @@ def default_chrome_path():
     driver_dir = getattr(utils_settings, "DRIVER_DIR", None)
     if platform.system() == "Windows":
         if driver_dir:
-            return os.path.abspath(os.path.join(driver_dir, "chromedriver.exe"))
+            return os.path.abspath(os.path.join(driver_dir,
+                                                "chromedriver.exe"))
 
         raise Exception("The chromedriver drive path attribute is not found.")
     else:
@@ -42,11 +40,14 @@ def default_chrome_path():
 
 
 class ChromeDrive:
-
-    def __init__(self, chrome_path=default_chrome_path(), seckill_time=None, password=None):
+    def __init__(self,
+                 chrome_path=default_chrome_path(),
+                 seckill_time=None,
+                 password=None):
         self.chrome_path = chrome_path
         self.seckill_time = seckill_time
-        self.seckill_time_obj = datetime.strptime(self.seckill_time, '%Y-%m-%d %H:%M:%S')
+        self.seckill_time_obj = datetime.strptime(self.seckill_time,
+                                                  '%Y-%m-%d %H:%M:%S')
         self.password = password
 
     def start_driver(self):
@@ -59,11 +60,17 @@ class ChromeDrive:
 
     def find_chromedriver(self):
         try:
-            driver = webdriver.Chrome()
+            chrome_options = webdriver.chrome.options.Options()
+            chrome_options.add_experimental_option("debuggerAddress",
+                                                   "127.0.0.1:9222")
+            driver = webdriver.Chrome(executable_path=self.chrome_path,
+                                      options=chrome_options)
 
         except WebDriverException:
             try:
-                driver = webdriver.Chrome(executable_path=self.chrome_path, chrome_options=self.build_chrome_options())
+                driver = webdriver.Chrome(
+                    executable_path=self.chrome_path,
+                    chrome_options=self.build_chrome_options())
 
             except WebDriverException:
                 raise
@@ -74,33 +81,40 @@ class ChromeDrive:
         chrome_options = webdriver.ChromeOptions()
         chrome_options.accept_untrusted_certs = True
         chrome_options.assume_untrusted_cert_issuer = True
-        arguments = ['--no-sandbox', '--disable-impl-side-painting', '--disable-setuid-sandbox', '--disable-seccomp-filter-sandbox',
-                     '--disable-breakpad', '--disable-client-side-phishing-detection', '--disable-cast',
-                     '--disable-cast-streaming-hw-encoding', '--disable-cloud-import', '--disable-popup-blocking',
-                     '--ignore-certificate-errors', '--disable-session-crashed-bubble', '--disable-ipv6',
-                     '--allow-http-screen-capture', '--start-maximized']
+        chrome_options.debugger_address = "127.0.0.1:9222"
+        arguments = [
+            '--no-sandbox', '--disable-impl-side-painting',
+            '--disable-setuid-sandbox', '--disable-seccomp-filter-sandbox',
+            '--disable-breakpad', '--disable-client-side-phishing-detection',
+            '--disable-cast', '--disable-cast-streaming-hw-encoding',
+            '--disable-cloud-import', '--disable-popup-blocking',
+            '--ignore-certificate-errors', '--disable-session-crashed-bubble',
+            '--disable-ipv6', '--allow-http-screen-capture',
+            '--start-maximized'
+        ]
         for arg in arguments:
             chrome_options.add_argument(arg)
-        chrome_options.add_argument(f'--user-agent={choice(get_useragent_data())}')
+        chrome_options.add_argument(
+            f'--user-agent={choice(get_useragent_data())}')
         return chrome_options
 
-    def login(self, login_url: str="https://www.taobao.com"):
+    def login(self, login_url: str = "https://www.taobao.com"):
         if login_url:
             self.driver = self.start_driver()
         else:
             print("Please input the login url.")
             raise Exception("Please input the login url.")
 
-
         while True:
             self.driver.get(login_url)
             try:
                 if self.driver.find_element_by_link_text("亲，请登录"):
                     print("没登录，开始点击登录按钮...")
-                    self.driver.find_element_by_link_text("亲，请登录").click()
+                    # self.driver.find_element_by_link_text("亲，请登录").click()
                     print("请在30s内扫码登陆!!")
                     sleep(30)
-                    if self.driver.find_element_by_xpath('//*[@id="J_SiteNavMytaobao"]/div[1]/a/span'):
+                    if self.driver.find_element_by_xpath(
+                            '//*[@id="J_SiteNavMytaobao"]/div[1]/a/span'):
                         print("登陆成功")
                         break
                     else:
@@ -108,14 +122,15 @@ class ChromeDrive:
                         continue
             except Exception as e:
                 print(str(e))
-                continue
+                break
 
     def keep_wait(self):
         self.login()
         print("等待到点抢购...")
         while True:
-            current_time = datetime.now()
-            if (self.seckill_time_obj - current_time).seconds > 180:
+            diff_time = (self.seckill_time_obj - datetime.now()).seconds
+            print("距离抢购时间(秒):", diff_time)
+            if diff_time > 180:
                 self.driver.get("https://cart.taobao.com/cart.htm")
                 print("每分钟刷新一次界面，防止登录超时...")
                 sleep(60)
@@ -123,7 +138,6 @@ class ChromeDrive:
                 self.get_cookie()
                 print("抢购时间点将近，停止自动刷新，准备进入抢购阶段...")
                 break
-
 
     def sec_kill(self):
         self.keep_wait()
@@ -151,7 +165,6 @@ class ChromeDrive:
                 retry_count += 1
 
                 try:
-
                     if self.driver.find_element_by_id("J_Go"):
                         self.driver.find_element_by_id("J_Go").click()
                         print("已经点击结算按钮...")
@@ -159,14 +172,15 @@ class ChromeDrive:
                         while True:
                             try:
                                 if click_submit_times < 10:
-                                    self.driver.find_element_by_link_text('提交订单').click()
+                                    self.driver.find_element_by_link_text(
+                                        '提交订单').click()
                                     print("已经点击提交订单按钮")
                                     submit_succ = True
                                     break
                                 else:
                                     print("提交订单失败...")
+                                    break
                             except Exception as e:
-
                                 print("没发现提交按钮, 页面未加载, 重试...")
                                 click_submit_times = click_submit_times + 1
                                 sleep(0.1)
@@ -179,12 +193,15 @@ class ChromeDrive:
             if self.password:
                 self.pay()
 
-
     def pay(self):
         try:
-            element = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, 'sixDigitPassword')))
+            element = WebDriverWait(self.driver, 10).until(
+                EC.presence_of_element_located(
+                    (By.CLASS_NAME, 'sixDigitPassword')))
             element.send_keys(self.password)
-            WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, 'J_authSubmit'))).click()
+            WebDriverWait(self.driver, 10).until(
+                EC.presence_of_element_located(
+                    (By.ID, 'J_authSubmit'))).click()
             notify_user(msg="付款成功")
         except:
             notify_user(msg="付款失败")
@@ -192,9 +209,8 @@ class ChromeDrive:
             sleep(60)
             self.driver.quit()
 
-
     def get_cookie(self):
         cookies = self.driver.get_cookies()
         cookie_json = json.dumps(cookies)
-        with open('./cookies.txt', 'w', encoding = 'utf-8') as f:
+        with open('./cookies.txt', 'w', encoding='utf-8') as f:
             f.write(cookie_json)
