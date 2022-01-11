@@ -1,5 +1,4 @@
 # taobao_seckill
-淘宝、天猫半价抢购，抢电视、抢茅台，干死黄牛党
 ## 依赖
 #### 安装chrome浏览器，根据浏览器的版本找到对应的[chromedriver](http://npm.taobao.org/mirrors/chromedriver/)下载安装
 
@@ -11,6 +10,7 @@
 4、程序运行后，会打开淘宝登陆页，需要自己手动点击切换到扫码登陆
 
 #### 淘宝有针对selenium的检测，如果遇到验证码说明被反爬了，遇到这种情况应该换一个方案，凡是用到selenium都会严重依赖网速、电脑配置。
-#### 如果想直接绕过淘宝的检测，可以手动打开浏览器登陆淘宝，然后再用selenium接管浏览器。只提供思路，具体实现大佬们可以自己摸索。
+- 如果想直接绕过淘宝的检测，可以手动打开浏览器登陆淘宝，然后再用selenium接管浏览器。
+  - `chrome.exe --remote-debugging-port=9222 --user-data-dir="D:\Downloads`在指定端口打开chrome浏览器
 
 
